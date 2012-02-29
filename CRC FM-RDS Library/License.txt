@@ -1,0 +1,32 @@
+CRC FM-RDS Android Library License v1.0
+
+Copyright (C) Her Majesty the Queen in Right of Canada, 2011
+
+Communications Research Centre (CRC)
+
+This library is available free of charge and is licensed to you on a
+non-exclusive basis; you may not redistribute it unless you redistribute it
+as part of your own application through the Android Market (TM)
+(http://market.android.com/). In such case,  redistribution is  permitted
+provided that the following conditions are met:
+
+* Redistributions must reproduce the above copyright notice, this list of
+conditions and the following disclaimer in the documentation and/or other
+materials provided with the distribution.
+* The name of the CRC may not be used to endorse or promote products
+derived from this software without specific prior written permission from CRC.
+* An email must be sent to the contact below to provide CRC with the name
+of your application before your start distributing it on the Android Market.
+
+This program is provided \"AS IS\" in the hope that it will be useful, but
+WITHOUT ANY WARRANTY with respect to its accuracy or usefulness; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE and NONINFRINGEMENT.
+
+In no event shall CRC be LIABLE for any LOSS, DAMAGE or COST that may be
+incurred in connection with the use of this software.
+
+Contact:
+- Francois Lefebvre <francois dot lefebvre at crc dot ca>
+- Web: http://www.crc.gc.ca
+
