@@ -3,3 +3,15 @@ README for fm-radio
 cs194-22 project
 
 authors: Albert Wan and Michael Chen
+
+We have to find a way to record audio from the AudioManager. The current way to do this is to record the output from
+the speakerphone using the mic. This is largely inefficient.
+
+Useful libraries:
+Once we figure out how to record from AudioManagers we should be able to use the MediaRecorder library to 
+analyze the waves.
+-MediaRecorder
+-http://stackoverflow.com/questions/8524182/sound-recognition-in-android
+
+Another solution is to use RDS. RDS's limitations is that it's limited to 64 characters per packet and 
+has a margin of error.
