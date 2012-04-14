@@ -2,9 +2,7 @@ package com.radio.helloradio;
 
 import android.app.Activity;
 import android.content.Context;
-import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioRecord;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,19 +13,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.media.audiofx.Visualizer;
-//import ca.gc.crc.libfmrds.FMinterface;
 import android.media.MediaRecorder;
 import android.os.Environment;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.lang.Math;
-import java.util.Arrays;
 
 public class HelloRadio extends Activity implements View.OnClickListener {
-	//private FMinterface FMLibrary = new FMinterface();
 
 	private String TAG = "HelloRadio";
 	private Thread myTimer = null;
@@ -35,45 +27,20 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     private static String mFileName = null;
     private MediaPlayer mMediaPlayer;
     private Visualizer mVisualizer;
-    private byte[] mFft;
-    private boolean runOnce = false;
-    
-    public native void DoFFT(double[] data, int size);
-  
     
     private FMPlayerServiceWrapper mFmRadioServiceWrapper;
 	private IFMRadioNotification mRadioNotification = new GalaxyRadioNotification();
 	private AudioManager aManager = null;
-	private String mFrequencyData = "";
 	private String mStationData = "";
 	private String mInfoData = "";
-	private Handler mRefreshHandler = new RefreshHandler();
-	private boolean isTuned;
 	
 	private static final int RADIO_AUDIO_STREAM = 0xa;
 	private static final String FM_RADIO_SERVICE_NAME = "FMPlayer";
     
-	private final static int RATE = 8000;
-    private final static int CHANNEL_MODE = AudioFormat.CHANNEL_CONFIGURATION_MONO;
-    private final static int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
-    private final static int BUFFER = 6144;
-	
-    private final static int BUFFER_SIZE_IN_MS = 3000;
-    private final static int CHUNK_SIZE_IN_SAMPLES = 4096;
-    
-    private final static int CHUNK_SIZE_IN_MS = 1000 * CHUNK_SIZE_IN_SAMPLES / RATE;
-    private final static int BUFFER_SIZE_IN_BYTES = RATE * BUFFER_SIZE_IN_MS / 1000 * 2;
-    private final static int CHUNK_SIZE_IN_BYTES = RATE * CHUNK_SIZE_IN_MS / 1000 * 2;
-    private final static int MIN_FREQUENCY = 50;
-    private final static int MAX_FREQUENCY = 600;
-    private final static int DRAW_FREQUENCY_STEP = 5;
-    
     private void log(String msg) {
 		Log.d(TAG, msg);
 	}
-    
-
-    
+   
 	public void recordStart() {
 		mRecorder = new MediaRecorder();
 		mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);

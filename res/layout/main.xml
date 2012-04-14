@@ -8,7 +8,7 @@
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="This is a test of the Radio features from the CRC library. It tests FM audio as well as RadioDNS data." android:textColor="#FF0000"/>
+        android:text="Welcome to RADIO. Tap Start to play and record FM radio, and Stop to stop tuning, play the audio back and report the frequency." android:textColor="#FF0000"/>
 
     <TextView
         android:id="@+id/textView2"
@@ -50,7 +50,7 @@
         android:id="@+id/textView8"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enter a frequency and press Start for a 5 second preview." />
+        android:text="Enter a frequency and press Start to play and record an FM station." />
 
     <TextView
         android:id="@+id/textView9"
@@ -66,7 +66,7 @@
             android:id="@+id/editText1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1" android:text="94900">
+            android:layout_weight="1" android:text="96900">
 
             <requestFocus />
         </EditText>
