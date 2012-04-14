@@ -4,10 +4,5 @@
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry kind="lib" path="CRC FM-RDS Library/libfmrds.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="file:/Users/Albert/Documents/workspace/Hello Radio/CRC FM-RDS Library/doc/"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

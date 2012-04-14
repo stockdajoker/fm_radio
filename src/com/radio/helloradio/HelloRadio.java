@@ -5,6 +5,7 @@ import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -13,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.media.audiofx.Visualizer;
 //import ca.gc.crc.libfmrds.FMinterface;
 import android.media.MediaRecorder;
 import android.os.Environment;
@@ -21,6 +23,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.lang.Math;
+import java.util.Arrays;
 
 public class HelloRadio extends Activity implements View.OnClickListener {
 	//private FMinterface FMLibrary = new FMinterface();
@@ -29,6 +33,10 @@ public class HelloRadio extends Activity implements View.OnClickListener {
 	private Thread myTimer = null;
     private MediaRecorder mRecorder = null;
     private static String mFileName = null;
+    private MediaPlayer mMediaPlayer;
+    private Visualizer mVisualizer;
+    private byte[] mFft;
+    private boolean runOnce = false;
     
     public native void DoFFT(double[] data, int size);
   
@@ -36,7 +44,6 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     private FMPlayerServiceWrapper mFmRadioServiceWrapper;
 	private IFMRadioNotification mRadioNotification = new GalaxyRadioNotification();
 	private AudioManager aManager = null;
-	private AudioRecord recorder = null;
 	private String mFrequencyData = "";
 	private String mStationData = "";
 	private String mInfoData = "";
@@ -65,46 +72,7 @@ public class HelloRadio extends Activity implements View.OnClickListener {
 		Log.d(TAG, msg);
 	}
     
-    public void initRecorderParameters(int[] sampleRates){
 
-        for (int i = 0; i < sampleRates.length; ++i){
-            try {
-                log("Indexing "+sampleRates[i]+"Hz Sample Rate");
-                int tmpBufferSize = AudioRecord.getMinBufferSize(sampleRates[i], 
-                                AudioFormat.CHANNEL_IN_MONO,
-                                AudioFormat.ENCODING_PCM_16BIT);
-
-                // Test the minimum allowed buffer size with this configuration on this device.
-                if(tmpBufferSize != AudioRecord.ERROR_BAD_VALUE){
-                    // Seems like we have ourself the optimum AudioRecord parameter for this device.
-                    recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, 
-                                                            sampleRates[i], 
-                                                            AudioFormat.CHANNEL_IN_MONO,
-                                                            AudioFormat.ENCODING_PCM_16BIT,
-                                                            tmpBufferSize);
-                    // Test if an AudioRecord instance can be initialized with the given parameters.
-                    if(recorder.getState() == AudioRecord.STATE_INITIALIZED){
-                        String configResume = "initRecorderParameters(sRates) has found recorder settings supported by the device:"  
-                                            + "\nSource   = MICROPHONE"
-                                            + "\nsRate    = "+sampleRates[i]+"Hz"
-                                            + "\nChannel  = MONO"
-                                            + "\nEncoding = 16BIT";
-                        log(configResume);
-
-                        /*//+++Release temporary recorder resources and leave.
-                        tmpRecoder.release();
-                        tmpRecoder = null;
-						*/
-                        return;
-                    }                 
-                }else{
-                    log( "Incorrect buffer size. Continue sweeping Sampling Rate...");
-                }
-            } catch (IllegalArgumentException e) {
-                log( "The "+sampleRates[i]+"Hz Sampling Rate is not supported on this device");
-            }
-        }
-    }
     
 	public void recordStart() {
 		mRecorder = new MediaRecorder();
@@ -112,7 +80,7 @@ public class HelloRadio extends Activity implements View.OnClickListener {
 		mRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR);
 		mRecorder.setOutputFile(mFileName);
 		mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-		
+		log("mRecorder: " + mRecorder.toString());
 		try {
 			mRecorder.prepare();
 			mRecorder.start();
@@ -205,44 +173,76 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     
     private Runnable Timer_tick = new Runnable() {
     	public void run() {
-    		short[] audioData = new short[BUFFER];
-    		int bufferSize = BUFFER;
-    		int numCrossing;
-    		while (isRadioOn()) {
-    			/*log("state: " + recorder.getRecordingState());
-    			if (recorder.getRecordingState() == android.media.AudioRecord.RECORDSTATE_STOPPED) {
-    				recorder.startRecording();
-    				log("state after : " + recorder.getRecordingState());
-    			} else {
-    				log("y u never come here");
-    				recorder.read(audioData, 0, BUFFER);
-    				
-    				numCrossing = 0;
-    				for (int p=0;p<bufferSize/4;p+=4) {
-    					if (audioData[p]>0 && audioData[p+1]<=0) numCrossing++;
-    		            if (audioData[p]<0 && audioData[p+1]>=0) numCrossing++;
-    		            if (audioData[p+1]>0 && audioData[p+2]<=0) numCrossing++;
-    		            if (audioData[p+1]<0 && audioData[p+2]>=0) numCrossing++;
-    		            if (audioData[p+2]>0 && audioData[p+3]<=0) numCrossing++;
-    		            if (audioData[p+2]<0 && audioData[p+3]>=0) numCrossing++;
-    		            if (audioData[p+3]>0 && audioData[p+4]<=0) numCrossing++;
-    		            if (audioData[p+3]<0 && audioData[p+4]>=0) numCrossing++;
-    				}//for p
-    		       
-    				for (int p=(bufferSize/4)*4;p<bufferSize-1;p++) {
-    					if (audioData[p]>0 && audioData[p+1]<=0) numCrossing++;
-    					if (audioData[p]<0 && audioData[p+1]>=0) numCrossing++;
-    				}
-    				log("frequency: " + ((8000 / bufferSize) * numCrossing / 2));
-    			}*/
-    		}
-    		if (recorder.getState() == android.media.AudioRecord.RECORDSTATE_RECORDING) {
-    			recorder.stop();
-
-    		}
-
+    		
     	}
     };
+    
+    public static int byteArrayToInt(byte[] b) {
+    	return (b[0] << 24) 
+    			+ ((b[1] & 0xFF) << 16)
+    			+ ((b[2] & 0xFF) << 8)
+    			+(b[3] & 0xFF);
+    }
+    
+    private static int findMaxIndex(double[] array) {
+    	double max = array[0];
+    	int maxIndex = 0;
+    	for (int i = 1; i < array.length; i++) {
+    		if (array[i] > max) {
+    			max = array[i];
+    			maxIndex = i;
+    		}
+    	}
+    	return maxIndex;
+    	
+    }
+    
+    private void analyze() {
+    	try {
+    		mMediaPlayer = new MediaPlayer();
+    		mMediaPlayer.setDataSource(mFileName);
+    		
+    		mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+    			public void onCompletion(MediaPlayer mediaPlayer) {
+    				mVisualizer.setEnabled(false);
+    			}
+    		});
+
+    		int Id = mMediaPlayer.getAudioSessionId();
+    		
+    		
+    		mVisualizer = new Visualizer(Id);
+    		mVisualizer.setEnabled(false);
+    		mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
+    		mVisualizer.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
+    			public void onFftDataCapture(Visualizer visualizer, byte[] bytes, int samplingRate) {
+    				samplingRate = samplingRate / 1000;
+    				double[] magnitude = new double[bytes.length / 2];
+    				
+    				for (int i = 2, j = 0; i < bytes.length; i += 2, j++) {
+    					magnitude[j] = Math.pow((double) (bytes[i] * bytes[i] + bytes[i + 1] * bytes[i + 1]), 0.5);
+    				}
+    				double max = findMaxIndex(magnitude);
+    				log("max: " + max * samplingRate / bytes.length);
+    				
+    			}
+    			public void onWaveFormDataCapture(Visualizer visualizer, byte[] bytes, int samplingRate) {
+    				boolean periodFound = false;
+    				if (visualizer == mVisualizer) {
+    					if (periodFound) {
+    						
+    					}
+    				}
+    			}
+    		}, Visualizer.getMaxCaptureRate() / 2, true, true);
+    		mVisualizer.setEnabled(true);
+    		mMediaPlayer.prepare();
+    		mMediaPlayer.start();
+    	} catch (Exception e) {
+    		log("error: " + e);
+    	}
+    	
+    }
     public void onClick(View v) {
     	switch(v.getId()) {
     	case R.id.button1:
@@ -254,19 +254,10 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     		((TextView)findViewById(R.id.textView8)).setText(Double.toString((double) currentFreq / 1000));
     		if (isRadioSupported()) {
     		    if (turnRadioOn()) {
-    		    	if (recorder == null) {
-    		    		int[] sampleRates = {8000, 11025, 22050, 44100, 48000};
-    		    		initRecorderParameters(sampleRates); 	
-    		    	}
     		    	enableRDS();
     		    	setFrequency(currentFreq);
     		    	setRadioVolume();
 
-    		    	log("state: " + recorder.getRecordingState());
-        			if (recorder.getRecordingState() == android.media.AudioRecord.RECORDSTATE_STOPPED) {
-        				recorder.startRecording();
-        				log("state after: " + recorder.getRecordingState());
-        			}
     		    	myTimer = new Thread(Timer_tick);
     		    	myTimer.start();
     		    	
@@ -291,11 +282,8 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     			recordStop();	
     			log("stopped");
 		    	turnRadioOff();
+		    	analyze();
 		    	log("radio turned off");
-		    	if (recorder != null) {
-		    		recorder.release();
-		    		recorder = null;
-		    	}
     		}
 		    break;
     	default:
