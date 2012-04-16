@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.media.audiofx.Visualizer;
 import android.media.MediaRecorder;
 import android.os.Environment;
@@ -27,6 +28,7 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     private static String mFileName = null;
     private MediaPlayer mMediaPlayer;
     private Visualizer mVisualizer;
+    private Toast toast;
     
     private FMPlayerServiceWrapper mFmRadioServiceWrapper;
 	private IFMRadioNotification mRadioNotification = new GalaxyRadioNotification();
@@ -42,17 +44,19 @@ public class HelloRadio extends Activity implements View.OnClickListener {
 	}
    
 	public void recordStart() {
-		mRecorder = new MediaRecorder();
-		mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-		mRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR);
-		mRecorder.setOutputFile(mFileName);
-		mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-		log("mRecorder: " + mRecorder.toString());
-		try {
-			mRecorder.prepare();
-			mRecorder.start();
-		} catch (IOException e) {
-			System.err.println("prepare() failed");
+		if (mRecorder == null) {
+			mRecorder = new MediaRecorder();
+			mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR);
+			mRecorder.setOutputFile(mFileName);
+			mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+			log("mRecorder: " + mRecorder.toString());
+			try {
+				mRecorder.prepare();
+				mRecorder.start();
+			} catch (IOException e) {
+				System.err.println("prepare() failed");
+			}
 		}
 	}
 	
@@ -81,7 +85,16 @@ public class HelloRadio extends Activity implements View.OnClickListener {
 				mFmRadioServiceWrapper.on();
 				return true;
 			} catch (FMPlayerException e) {
-				log("error");
+				toast = Toast.makeText(getApplicationContext(), "error", Toast.LENGTH_SHORT);
+				switch (e.getCode()) {
+				case FMPlayerException.AIRPLANE_MODE:
+					toast.setText("Airplane Mode is on");
+					break;
+				case FMPlayerException.HEAD_SET_IS_NOT_PLUGGED:
+					toast.setText("No earphones connected.");
+					break;
+				}
+				toast.show();
 				return false;
 			}
 		}
@@ -113,6 +126,16 @@ public class HelloRadio extends Activity implements View.OnClickListener {
 		aManager.setStreamVolume(RADIO_AUDIO_STREAM, aManager.getStreamVolume(RADIO_AUDIO_STREAM), 0x0);
 	}
 	
+	public void TimerMethod() {
+		this.runOnUiThread(Timer_tick);
+	}
+	
+	private Runnable Timer_tick = new Runnable() {
+		public void run() {
+
+		}
+	};
+	
     /** Called when the activity is first created. */
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -120,35 +143,12 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     	mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
     	mFileName += "/audiorecordtest.3gp";
 
-
-    	log("working");
-    	System.loadLibrary("fft-jni");
-    	log("still working");
     	aManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
     	mFmRadioServiceWrapper = new FMPlayerServiceWrapper(getSystemService(FM_RADIO_SERVICE_NAME));
     	mFmRadioServiceWrapper.setListener(mRadioNotification);
-       
-        
+      
         ((Button)findViewById(R.id.button1)).setOnClickListener(this);
         ((Button)findViewById(R.id.button2)).setOnClickListener(this);
-    }
-    
-    public void TimerMethod() {
-    	this.runOnUiThread(Timer_tick);
-    }
-    
-    
-    private Runnable Timer_tick = new Runnable() {
-    	public void run() {
-    		
-    	}
-    };
-    
-    public static int byteArrayToInt(byte[] b) {
-    	return (b[0] << 24) 
-    			+ ((b[1] & 0xFF) << 16)
-    			+ ((b[2] & 0xFF) << 8)
-    			+(b[3] & 0xFF);
     }
     
     private static int findMaxIndex(double[] array) {
@@ -161,7 +161,6 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     		}
     	}
     	return maxIndex;
-    	
     }
     
     private void analyze() {
@@ -176,8 +175,7 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     		});
 
     		int Id = mMediaPlayer.getAudioSessionId();
-    		
-    		
+
     		mVisualizer = new Visualizer(Id);
     		mVisualizer.setEnabled(false);
     		mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
@@ -189,9 +187,11 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     				for (int i = 2, j = 0; i < bytes.length; i += 2, j++) {
     					magnitude[j] = Math.pow((double) (bytes[i] * bytes[i] + bytes[i + 1] * bytes[i + 1]), 0.5);
     				}
-    				double max = findMaxIndex(magnitude);
-    				log("max: " + max * samplingRate / bytes.length);
-    				
+    				double max = findMaxIndex(magnitude);  				
+    				String output = "frequency: " + max * samplingRate / bytes.length + " Hz";
+    				log(output);
+    				toast = Toast.makeText(getApplicationContext(), output, Toast.LENGTH_SHORT);
+    				toast.show();
     			}
     			public void onWaveFormDataCapture(Visualizer visualizer, byte[] bytes, int samplingRate) {
     				boolean periodFound = false;
@@ -207,65 +207,63 @@ public class HelloRadio extends Activity implements View.OnClickListener {
     		mMediaPlayer.start();
     	} catch (Exception e) {
     		log("error: " + e);
-    	}
-    	
+    	}	
     }
+    
     public void onClick(View v) {
+		toast = Toast.makeText(getApplicationContext(), "nothing", Toast.LENGTH_SHORT);
     	switch(v.getId()) {
     	case R.id.button1:
     		//start
-    		recordStart();
-
     		String temp = ((EditText)findViewById(R.id.editText1)).getText().toString();
     		int currentFreq = Integer.parseInt(temp); 
     		((TextView)findViewById(R.id.textView8)).setText(Double.toString((double) currentFreq / 1000));
     		if (isRadioSupported()) {
     		    if (turnRadioOn()) {
+    	    		recordStart();
     		    	enableRDS();
     		    	setFrequency(currentFreq);
     		    	setRadioVolume();
-
+    		    	toast.setText("Radio on");
+    		    	log("radio on");
+    		    	
     		    	myTimer = new Thread(Timer_tick);
     		    	myTimer.start();
-    		    	
     		    }
     		}
     		break;
     	case R.id.button2:
     		//stop
-    		if (myTimer != null) {
-    			 
-
-	        	/*
-		    	String PI = Integer.toHexString(FMLibrary.getPI());
-		    	String PS = FMLibrary.getPS();
-		    	String RT = FMLibrary.getRT();
-		                
-		    	((TextView)findViewById(R.id.textView3)).setText(PI);
-		    	((TextView)findViewById(R.id.textView5)).setText(PS);
-		    	((TextView)findViewById(R.id.textView7)).setText(RT);
-		    	*/
-    			log("before stopped");
+    		if (isRadioOn()) {
     			recordStop();	
-    			log("stopped");
-		    	turnRadioOff();
-		    	analyze();
-		    	log("radio turned off");
+    			turnRadioOff();
+    			analyze();
+    			toast.setText("Radio off");
+    			log("radio off");
     		}
 		    break;
     	default:
     		break;
-    	
     	}
+    	toast.show();
     }
     
     public class GalaxyRadioNotification implements IFMRadioNotification {
 
+    	@Override
+    	public void onEarPhoneConnected() {}
+    	
+    	@Override
+    	public void onEarPhoneDisconnected() {
+    		
+    	}
 		@Override
 		public void onRDSReceived(long freq, String stationName,
 				String radioText) {
 			mStationData = stationName;
 			mInfoData = radioText;
+			((TextView) findViewById(R.id.textView3)).setText(mStationData);
+			((TextView) findViewById(R.id.textView7)).setText(mInfoData);
 
 		}
 

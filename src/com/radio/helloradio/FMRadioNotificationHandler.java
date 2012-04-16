@@ -42,6 +42,12 @@ public class FMRadioNotificationHandler extends Handler {
 	@Override
 	public void handleMessage(Message msg) {
 		switch (msg.what) {
+		case EVENT_EAR_PHONE_CONNECT:
+			receiver.onEarPhoneConnected();
+			break;
+		case EVENT_EAR_PHONE_DISCONNECT:
+			receiver.onEarPhoneDisconnected();
+			break;
 		case EVENT_RDS_EVENT:
 		{
 			Object[] data = (Object[]) msg.obj;
