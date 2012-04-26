@@ -8,7 +8,7 @@
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Welcome to RADIO. Tap Start to play and record FM radio, and Stop to stop tuning, play the audio back and report the frequency." android:textColor="#FF0000"/>
+        android:text="Welcome to RADIO. Tap Start to play and record FM radio, and Stop to stop tuning, play the audio back and analyze the results." android:textColor="#FF0000"/>
 
     <TextView
         android:id="@+id/textView2"
