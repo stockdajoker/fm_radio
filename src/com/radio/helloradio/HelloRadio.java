@@ -1,5 +1,7 @@
 /**
- * 
+ * HelloRadio.java
+ * Written by Albert Wan and Michael Chen
+ * CS 194-22, UC Berkeley Spring 2012
  */
 
 package com.radio.helloradio;
